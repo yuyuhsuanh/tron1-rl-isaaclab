@@ -19,13 +19,16 @@ def randomize_rigid_body_material_shared_friction(
     asset: Articulation = env.scene[asset_cfg.name]
 
     if env_ids is None:
-        env_ids = torch.arange(env.scene.num_envs, device=asset.device)
+        env_ids = torch.arange(env.scene.num_envs, device="cpu")
+    else:
+        env_ids = env_ids.cpu()
 
     # shape: (num_envs, num_bodies, 3) — [static_friction, dynamic_friction, restitution]
+    # PhysX view tensors are on CPU
     materials = asset.root_physx_view.get_material_properties().clone()
 
-    friction = torch.empty(len(env_ids), 1, device=asset.device).uniform_(*friction_range)
-    restitution = torch.empty(len(env_ids), 1, device=asset.device).uniform_(*restitution_range)
+    friction = torch.empty(len(env_ids), 1).uniform_(*friction_range)
+    restitution = torch.empty(len(env_ids), 1).uniform_(*restitution_range)
 
     materials[env_ids, :, 0] = friction   # static
     materials[env_ids, :, 1] = friction   # dynamic (same sample)
