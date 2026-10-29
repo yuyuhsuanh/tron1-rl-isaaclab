@@ -92,7 +92,7 @@ class CommandsCfg:
         debug_vis=True,
         resampling_time_range=(3.0, 15.0),
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.7, 0.7), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-math.pi, math.pi), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.5, 1.5), lin_vel_y=(0.0, 0.0), ang_vel_z=(-math.pi, math.pi), heading=(-math.pi, math.pi)
         ),
     )
 
@@ -259,12 +259,11 @@ class EventsCfg:
         },
     )
     robot_physics_material = EventTerm(
-        func=mdp.randomize_rigid_body_material,
+        func=mdp.randomize_rigid_body_material_shared_friction,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-            "static_friction_range": (0.4, 1.2),
-            "dynamic_friction_range": (0.7, 0.9),
+            "friction_range": (0.4, 1.2),
             "restitution_range": (0.0, 1.0),
             "num_buckets": 48,
         },
@@ -392,7 +391,7 @@ class RewardsCfg:
     pen_ang_vel_xy = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.3)
     pen_joint_torque = RewTerm(func=mdp.joint_torques_l2, weight=-0.00016)
     pen_joint_accel = RewTerm(func=mdp.joint_acc_l2, weight=-1.5e-7)
-    pen_action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.3) # -0.03
+    pen_action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.01) # -0.03
     pen_non_wheel_pos_limits = RewTerm(
         func=mdp.joint_pos_limits,
         weight=-2.0,
@@ -420,7 +419,7 @@ class RewardsCfg:
     
     pen_joint_power_l1 = RewTerm(func=mdp.joint_powers_l1, weight=-2e-5)
     pen_joint_vel_wheel_l2 = RewTerm(
-        func=mdp.joint_vel_l2, weight=-5e-3, params={"asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+")}
+        func=mdp.joint_vel_l2, weight=-5e-4, params={"asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+")}
     )
     pen_vel_non_wheel_l2 = RewTerm(
         func=mdp.joint_vel_l2,

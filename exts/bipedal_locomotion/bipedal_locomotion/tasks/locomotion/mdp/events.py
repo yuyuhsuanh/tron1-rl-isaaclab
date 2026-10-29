@@ -7,6 +7,27 @@ import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.envs import ManagerBasedEnv
 from isaaclab.managers import SceneEntityCfg
+import isaaclab.envs.mdp as isaaclab_mdp
+
+
+def randomize_rigid_body_material_shared_friction(
+    env: ManagerBasedEnv,
+    env_ids: torch.Tensor | None,
+    asset_cfg: SceneEntityCfg,
+    friction_range: tuple[float, float],
+    restitution_range: tuple[float, float],
+    num_buckets: int,
+):
+    """Sample friction once and use it for both static and dynamic."""
+    isaaclab_mdp.randomize_rigid_body_material(
+        env,
+        env_ids,
+        asset_cfg=asset_cfg,
+        static_friction_range=friction_range,
+        dynamic_friction_range=friction_range,
+        restitution_range=restitution_range,
+        num_buckets=num_buckets,
+    )
 
 def prepare_quantity_for_tron(
     env: ManagerBasedEnv,
