@@ -7,9 +7,6 @@ import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.envs import ManagerBasedEnv
 from isaaclab.managers import SceneEntityCfg
-import isaaclab.envs.mdp as isaaclab_mdp
-
-
 def randomize_rigid_body_material_shared_friction(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor | None,
@@ -18,16 +15,23 @@ def randomize_rigid_body_material_shared_friction(
     restitution_range: tuple[float, float],
     num_buckets: int,
 ):
-    """Sample friction once and use it for both static and dynamic."""
-    isaaclab_mdp.randomize_rigid_body_material(
-        env,
-        env_ids,
-        asset_cfg=asset_cfg,
-        static_friction_range=friction_range,
-        dynamic_friction_range=friction_range,
-        restitution_range=restitution_range,
-        num_buckets=num_buckets,
-    )
+    """Sample friction once and apply to both static and dynamic friction."""
+    asset: Articulation = env.scene[asset_cfg.name]
+
+    if env_ids is None:
+        env_ids = torch.arange(env.scene.num_envs, device=asset.device)
+
+    # shape: (num_envs, num_bodies, 3) — [static_friction, dynamic_friction, restitution]
+    materials = asset.root_physx_view.get_material_properties().clone()
+
+    friction = torch.empty(len(env_ids), 1, device=asset.device).uniform_(*friction_range)
+    restitution = torch.empty(len(env_ids), 1, device=asset.device).uniform_(*restitution_range)
+
+    materials[env_ids, :, 0] = friction   # static
+    materials[env_ids, :, 1] = friction   # dynamic (same sample)
+    materials[env_ids, :, 2] = restitution
+
+    asset.root_physx_view.set_material_properties(materials, env_ids)
 
 def prepare_quantity_for_tron(
     env: ManagerBasedEnv,
