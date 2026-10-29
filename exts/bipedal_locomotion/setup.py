@@ -2,7 +2,10 @@
 
 import itertools
 import os
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # Python 3.10 backport
 
 from setuptools import setup
 
