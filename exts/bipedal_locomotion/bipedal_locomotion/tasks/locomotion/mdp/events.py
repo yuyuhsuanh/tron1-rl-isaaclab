@@ -36,6 +36,25 @@ def randomize_rigid_body_material_shared_friction(
 
     asset.root_physx_view.set_material_properties(materials, env_ids)
 
+def reset_wheel_velocity_from_base(
+    env: ManagerBasedEnv,
+    env_ids: torch.Tensor,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    wheel_joint_names: tuple[str, ...] = ("wheel_L", "wheel_R"),
+    wheel_radius: float = 0.128,
+):
+    """Set wheel joint velocities to v_x / r after base velocity reset."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    # base linear velocity in world frame, x = forward
+    v_x = asset.data.root_lin_vel_w[env_ids, 0]  # (N,)
+    wheel_omega = v_x / wheel_radius              # (N,)
+
+    wheel_ids, _ = asset.find_joints(list(wheel_joint_names))
+    joint_vel = asset.data.joint_vel[env_ids].clone()
+    joint_vel[:, wheel_ids] = wheel_omega.unsqueeze(-1).expand(-1, len(wheel_ids))
+    asset.write_joint_velocity_to_sim(joint_vel, env_ids=env_ids)
+
+
 def prepare_quantity_for_tron(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor | None,
