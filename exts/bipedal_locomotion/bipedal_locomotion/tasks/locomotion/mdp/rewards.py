@@ -24,6 +24,14 @@ def stay_alive(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Reward for staying alive."""
     return torch.ones(env.num_envs, device=env.device)
 
+
+def stopping_distance(
+    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """Per-step distance traveled in body-frame x. Use weight=-1.0 to penalize total stopping distance."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    return asset.data.root_lin_vel_b[:, 0].abs() * env.step_dt
+
 def foot_landing_vel(
         env: ManagerBasedRLEnv,
         asset_cfg: SceneEntityCfg,

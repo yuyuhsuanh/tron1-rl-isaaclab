@@ -36,6 +36,9 @@ class WFBrakeEnvCfg(WFBlindFlatEnvCfg):
 
         # --- Reward: rew_lin_vel_xy + rew_ang_vel_z already reward v->0 when cmd=0. ---
         self.rewards.stand_still = None
+        # Penalize total stopping distance: sum(-|v_x|*dt) over episode = -distance.
+        # Shorter stop = less penalty = higher reward, pushing policy toward max braking.
+        self.rewards.stopping_distance = RewTerm(func=mdp.stopping_distance, weight=-1.0)
 
 
 @configclass
