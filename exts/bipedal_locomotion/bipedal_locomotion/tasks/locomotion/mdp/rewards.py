@@ -478,6 +478,45 @@ class GaitReward(ManagerTermBase):
         return (reward / velocities.shape[1]) * self.vel_scale
 
 
+def wheel_slip_reward(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    command_name: str = "base_velocity",
+    radius: float = 0.128,
+    target_slip: float = 0.2,
+    std: float = 0.1,
+) -> torch.Tensor:
+    """Reward wheel slip near target slip ratio during acceleration."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_vel_x = asset.data.root_lin_vel_w[:, 0]
+    wheel_vel = torch.mean(asset.data.joint_vel[:, asset_cfg.joint_ids], dim=1)
+
+    slip = (wheel_vel * radius - body_vel_x) / (torch.abs(body_vel_x) + 0.1)
+
+    commands = env.command_manager.get_command(command_name)
+    accelerating = (commands[:, 0] * body_vel_x > 0) & (torch.abs(commands[:, 0]) > 0.5)
+
+    return torch.exp(-(slip - target_slip) ** 2 / std ** 2) * accelerating.float()
+
+
+def wheel_lockup_reward(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+    command_name: str = "base_velocity",
+    min_body_speed: float = 0.5,
+    std: float = 5.0,
+) -> torch.Tensor:
+    """Reward wheel lockup (ω → 0) while body is still moving, during braking command."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    body_speed = torch.norm(asset.data.root_lin_vel_w[:, :2], dim=1)
+    avg_wheel_vel = torch.mean(torch.abs(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1)
+
+    commands = env.command_manager.get_command(command_name)
+    braking = (body_speed > min_body_speed) & (torch.norm(commands[:, :2], dim=1) < 0.2)
+
+    return torch.exp(-avg_wheel_vel ** 2 / std) * braking.float()
+
+
 class ActionSmoothnessPenalty(ManagerTermBase):
     """
     A reward term for penalizing large instantaneous changes in the network action output.

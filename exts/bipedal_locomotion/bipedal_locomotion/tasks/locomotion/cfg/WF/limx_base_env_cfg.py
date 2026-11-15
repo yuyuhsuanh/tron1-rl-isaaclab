@@ -419,7 +419,25 @@ class RewardsCfg:
     
     pen_joint_power_l1 = RewTerm(func=mdp.joint_powers_l1, weight=-2e-5)
     pen_joint_vel_wheel_l2 = RewTerm(
-        func=mdp.joint_vel_l2, weight=-5e-4, params={"asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+")}
+        func=mdp.joint_vel_l2, weight=-1e-5, params={"asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+")}
+    )
+    rew_wheel_slip = RewTerm(
+        func=mdp.wheel_slip_reward,
+        weight=0.5,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+"),
+            "command_name": "base_velocity",
+            "radius": 0.128,
+            "target_slip": 0.2,
+        },
+    )
+    rew_wheel_lockup = RewTerm(
+        func=mdp.wheel_lockup_reward,
+        weight=0.5,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names="wheel_.+"),
+            "command_name": "base_velocity",
+        },
     )
     pen_vel_non_wheel_l2 = RewTerm(
         func=mdp.joint_vel_l2,
